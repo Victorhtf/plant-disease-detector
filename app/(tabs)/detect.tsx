@@ -25,15 +25,14 @@ export default function App() {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [isModalDetectionVisible, setModalDetectionVisible] = useState(false);
   const [isModalHelpVisible, setModalHelpVisible] = useState(false);
+  const [confidence, setConfidence] = useState<number | null>(null);
   const cameraRef = useRef<CameraView | null>(null);
 
   if (!permission) {
-    // Camera permissions are still loading.
     return <View />;
   }
 
   if (!permission.granted) {
-    // Camera permissions are not granted yet.
     return (
       <View style={styles.container}>
         <Text style={styles.message}>
@@ -50,10 +49,11 @@ export default function App() {
 
   async function takePhoto() {
     if (cameraRef.current) {
-      const photo = await cameraRef.current.takePictureAsync(); // Captura a foto
+      const photo = await cameraRef.current.takePictureAsync();
       if (photo?.uri) {
-        setPhotoUri(photo.uri); // Define a URI da foto no estado
-        setModalDetectionVisible(true); // Mostra o popup
+        setPhotoUri(photo.uri);
+        setConfidence(Math.floor(Math.random() * (91 - 85 + 1)) + 85); // Sorteia entre 85% e 91%
+        setModalDetectionVisible(true);
       } else {
         console.warn("No photo was captured.");
       }
@@ -62,14 +62,14 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      {/* Câmera com espaço reservado */}
+      {/* Câmera */}
       <View style={styles.cameraContainer}>
         <CameraView style={styles.camera} facing={facing} ref={cameraRef} />
       </View>
 
-      {/* Seção inferior */}
+      {/* Botões */}
       <View style={styles.footer}>
-        <TouchableOpacity style={[styles.secondaryCircularButton]}>
+        <TouchableOpacity style={styles.secondaryCircularButton}>
           <PhotoIcon name="photo" size={15} color="black" />
         </TouchableOpacity>
         <TouchableOpacity
@@ -79,14 +79,14 @@ export default function App() {
           <CameraIcon name="camera" size={24} color="black" />
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.secondaryCircularButton]}
+          style={styles.secondaryCircularButton}
           onPress={() => setModalHelpVisible(true)}
         >
           <HelpIcon name="help" size={15} color="black" />
         </TouchableOpacity>
       </View>
 
-      {/* Modal para exibir a foto capturada */}
+      {/* Modal da Detecção */}
       <Modal
         visible={isModalDetectionVisible}
         transparent={true}
@@ -98,6 +98,20 @@ export default function App() {
             {photoUri && (
               <Image source={{ uri: photoUri }} style={styles.previewImage} />
             )}
+            <Text style={styles.analysisTitle}>Resultado da Análise</Text>
+            <Text style={styles.analysisText}>
+              <Text style={styles.boldText}>Doença:</Text> Helmintosporiose
+            </Text>
+            <Text style={styles.analysisText}>
+              <Text style={styles.boldText}>Confiabilidade:</Text> {confidence}%
+            </Text>
+            <Text style={styles.analysisText}>
+              <Text style={styles.boldText}>Recomendações:</Text> Realizar
+              pulverização com fungicidas específicos para controle da doença.
+              Evitar áreas com alta umidade e realizar rotação de culturas.
+              <Text style={styles.seeMore}>Ver mais</Text>
+            </Text>
+
             <TouchableOpacity
               style={styles.closeButton}
               onPress={() => setModalDetectionVisible(false)}
@@ -108,7 +122,7 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* Modal para exibir instruções da captura */}
+      {/* Modal de Ajuda */}
       <Modal
         visible={isModalHelpVisible}
         transparent={true}
@@ -118,40 +132,17 @@ export default function App() {
         <View style={styles.modalContainer}>
           <View style={styles.detectionContainer}>
             <Text style={styles.instructionText}>
-              1. <Text style={styles.boldText}>Posicione a câmera</Text> de
-              forma que o objeto ou a área a ser analisada fique bem visível na
-              tela.
+              1. Posicione a câmera de forma que o objeto fique visível na tela.
             </Text>
             <Text style={styles.instructionText}>
-              2. <Text style={styles.boldText}>Aproxime a câmera</Text> do
-              objeto até que ele fique nítido e mostre apenas a folha. Tente
-              evitar mostrar o fundo ou outros objetos.
+              2. Certifique-se de que há boa iluminação.
             </Text>
-            <Text style={styles.instructionText}>
-              3.{" "}
-              <Text style={styles.boldText}>
-                Certifique-se de que há boa iluminação.
-              </Text>
-              {""} A luz natural é preferível, mas evite sombras fortes.
-            </Text>
-            <Text style={styles.instructionText}>
-              4. <Text style={styles.boldText}>Eviste movimentos bruscos.</Text>{" "}
-              Tente manter a câmera estável ao tirar a foto.
-            </Text>
-            <Text style={styles.instructionText}>
-              5. Quando estiver pronto,
-              <Text style={styles.boldText}> pressione o botão de captura</Text>
-              {""} para tirar a foto.
-            </Text>
-
-            <View>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setModalHelpVisible(false)}
-              >
-                <Text style={styles.closeButtonText}>Fechar</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setModalHelpVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>Fechar</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -160,6 +151,11 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
+  seeMore: {
+    color: "#3950B6",
+    fontSize: 13,
+    textDecorationLine: "underline",
+  },
   button: {
     backgroundColor: Colors.light.background, // Cor de fundo com o tom de destaque
     paddingVertical: 10,
@@ -169,6 +165,19 @@ const styles = StyleSheet.create({
     borderColor: Colors.light.tint, // Cor da borda com o tom de destaque
     alignItems: "center",
     justifyContent: "center",
+  },
+  analysisTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "black",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  analysisText: {
+    fontSize: 14,
+    color: "black",
+    marginBottom: 8,
+    textAlign: "left",
   },
   buttonText: {
     color: "white", // Cor do texto
